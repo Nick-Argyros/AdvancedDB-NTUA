@@ -1,0 +1,116 @@
+== Physical Plan ==
+AdaptiveSparkPlan (19)
++- == Final Plan ==
+   ResultQueryStage (12)
+   +- * Sort (11)
+      +- AQEShuffleRead (10), coalesced
+         +- ShuffleQueryStage (9), Statistics(sizeInBytes=576.0 B, rowCount=18)
+            +- Exchange (8)
+               +- * HashAggregate (7)
+                  +- AQEShuffleRead (6), coalesced
+                     +- ShuffleQueryStage (5), Statistics(sizeInBytes=26.2 KiB, rowCount=671)
+                        +- Exchange (4)
+                           +- * HashAggregate (3)
+                              +- * Project (2)
+                                 +- Scan json  (1)
++- == Initial Plan ==
+   Sort (18)
+   +- Exchange (17)
+      +- HashAggregate (16)
+         +- Exchange (15)
+            +- HashAggregate (14)
+               +- Project (13)
+                  +- Scan json  (1)
+
+
+(1) Scan json 
+Output [2]: [stars#3, date#8]
+Batched: false
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/raw/yelp_academic_dataset_review.json]
+ReadSchema: struct<stars:double,date:string>
+
+(2) Project [codegen id : 1]
+Output [2]: [stars#3, year(cast(gettimestamp(date#8, yyyy-MM-dd HH:mm:ss, TimestampType, try_to_timestamp, Some(Europe/Athens), false) as date)) AS _groupingexpression#24]
+Input [2]: [stars#3, date#8]
+
+(3) HashAggregate [codegen id : 1]
+Input [2]: [stars#3, _groupingexpression#24]
+Keys [1]: [_groupingexpression#24]
+Functions [2]: [partial_avg(stars#3), partial_count(1)]
+Aggregate Attributes [3]: [sum#25, count#26L, count#27L]
+Results [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+
+(4) Exchange
+Input [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Arguments: hashpartitioning(_groupingexpression#24, 200), ENSURE_REQUIREMENTS, [plan_id=37]
+
+(5) ShuffleQueryStage
+Output [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Arguments: 0
+
+(6) AQEShuffleRead
+Input [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Arguments: coalesced
+
+(7) HashAggregate [codegen id : 2]
+Input [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Keys [1]: [_groupingexpression#24]
+Functions [2]: [avg(stars#3), count(1)]
+Aggregate Attributes [2]: [avg(stars#3)#22, count(1)#21L]
+Results [3]: [_groupingexpression#24 AS year#9, avg(stars#3)#22 AS avg_stars#10, count(1)#21L AS n_reviews#11L]
+
+(8) Exchange
+Input [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=66]
+
+(9) ShuffleQueryStage
+Output [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: 1
+
+(10) AQEShuffleRead
+Input [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: coalesced
+
+(11) Sort [codegen id : 3]
+Input [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(12) ResultQueryStage
+Output [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: 2
+
+(13) Project
+Output [2]: [stars#3, year(cast(gettimestamp(date#8, yyyy-MM-dd HH:mm:ss, TimestampType, try_to_timestamp, Some(Europe/Athens), false) as date)) AS _groupingexpression#24]
+Input [2]: [stars#3, date#8]
+
+(14) HashAggregate
+Input [2]: [stars#3, _groupingexpression#24]
+Keys [1]: [_groupingexpression#24]
+Functions [2]: [partial_avg(stars#3), partial_count(1)]
+Aggregate Attributes [3]: [sum#25, count#26L, count#27L]
+Results [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+
+(15) Exchange
+Input [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Arguments: hashpartitioning(_groupingexpression#24, 200), ENSURE_REQUIREMENTS, [plan_id=17]
+
+(16) HashAggregate
+Input [4]: [_groupingexpression#24, sum#28, count#29L, count#30L]
+Keys [1]: [_groupingexpression#24]
+Functions [2]: [avg(stars#3), count(1)]
+Aggregate Attributes [2]: [avg(stars#3)#22, count(1)#21L]
+Results [3]: [_groupingexpression#24 AS year#9, avg(stars#3)#22 AS avg_stars#10, count(1)#21L AS n_reviews#11L]
+
+(17) Exchange
+Input [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=20]
+
+(18) Sort
+Input [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(19) AdaptiveSparkPlan
+Output [3]: [year#9, avg_stars#10, n_reviews#11L]
+Arguments: isFinalPlan=true
+
+

@@ -1,0 +1,110 @@
+== Physical Plan ==
+AdaptiveSparkPlan (18)
++- == Final Plan ==
+   ResultQueryStage (12)
+   +- * Sort (11)
+      +- AQEShuffleRead (10), coalesced
+         +- ShuffleQueryStage (9), Statistics(sizeInBytes=576.0 B, rowCount=18)
+            +- Exchange (8)
+               +- * HashAggregate (7)
+                  +- AQEShuffleRead (6), coalesced
+                     +- ShuffleQueryStage (5), Statistics(sizeInBytes=8.0 KiB, rowCount=205)
+                        +- Exchange (4)
+                           +- * HashAggregate (3)
+                              +- * ColumnarToRow (2)
+                                 +- Scan parquet  (1)
++- == Initial Plan ==
+   Sort (17)
+   +- Exchange (16)
+      +- HashAggregate (15)
+         +- Exchange (14)
+            +- HashAggregate (13)
+               +- Scan parquet  (1)
+
+
+(1) Scan parquet 
+Output [2]: [stars#3, year#9]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+ReadSchema: struct<stars:double>
+
+(2) ColumnarToRow [codegen id : 1]
+Input [2]: [stars#3, year#9]
+
+(3) HashAggregate [codegen id : 1]
+Input [2]: [stars#3, year#9]
+Keys [1]: [year#9]
+Functions [2]: [partial_avg(stars#3), partial_count(1)]
+Aggregate Attributes [3]: [sum#26, count#27L, count#28L]
+Results [4]: [year#9, sum#29, count#30L, count#31L]
+
+(4) Exchange
+Input [4]: [year#9, sum#29, count#30L, count#31L]
+Arguments: hashpartitioning(year#9, 200), ENSURE_REQUIREMENTS, [plan_id=36]
+
+(5) ShuffleQueryStage
+Output [4]: [year#9, sum#29, count#30L, count#31L]
+Arguments: 0
+
+(6) AQEShuffleRead
+Input [4]: [year#9, sum#29, count#30L, count#31L]
+Arguments: coalesced
+
+(7) HashAggregate [codegen id : 2]
+Input [4]: [year#9, sum#29, count#30L, count#31L]
+Keys [1]: [year#9]
+Functions [2]: [avg(stars#3), count(1)]
+Aggregate Attributes [2]: [avg(stars#3)#24, count(1)#23L]
+Results [3]: [year#9, avg(stars#3)#24 AS avg_stars#11, count(1)#23L AS n_reviews#12L]
+
+(8) Exchange
+Input [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=64]
+
+(9) ShuffleQueryStage
+Output [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: 1
+
+(10) AQEShuffleRead
+Input [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: coalesced
+
+(11) Sort [codegen id : 3]
+Input [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(12) ResultQueryStage
+Output [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: 2
+
+(13) HashAggregate
+Input [2]: [stars#3, year#9]
+Keys [1]: [year#9]
+Functions [2]: [partial_avg(stars#3), partial_count(1)]
+Aggregate Attributes [3]: [sum#26, count#27L, count#28L]
+Results [4]: [year#9, sum#29, count#30L, count#31L]
+
+(14) Exchange
+Input [4]: [year#9, sum#29, count#30L, count#31L]
+Arguments: hashpartitioning(year#9, 200), ENSURE_REQUIREMENTS, [plan_id=15]
+
+(15) HashAggregate
+Input [4]: [year#9, sum#29, count#30L, count#31L]
+Keys [1]: [year#9]
+Functions [2]: [avg(stars#3), count(1)]
+Aggregate Attributes [2]: [avg(stars#3)#24, count(1)#23L]
+Results [3]: [year#9, avg(stars#3)#24 AS avg_stars#11, count(1)#23L AS n_reviews#12L]
+
+(16) Exchange
+Input [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=18]
+
+(17) Sort
+Input [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(18) AdaptiveSparkPlan
+Output [3]: [year#9, avg_stars#11, n_reviews#12L]
+Arguments: isFinalPlan=true
+
+
