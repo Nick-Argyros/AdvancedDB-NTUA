@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/../opt/spark-4.2.0-bin-hadoop3/python"
+    ]
+}
