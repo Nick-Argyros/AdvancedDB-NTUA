@@ -1,0 +1,4 @@
+In-memory table q1_filtered
+  cached partitions : 25 / 25
+  memory size       : 23.0 MiB
+  disk size         : 0.0 MiB

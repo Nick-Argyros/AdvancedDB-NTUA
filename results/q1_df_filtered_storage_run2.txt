@@ -1,0 +1,8 @@
+*(1) Project [year#9, stars#3, useful#4, CASE WHEN (length(text#7) < 250) THEN Σύντομη (<250) WHEN (length(text#7) < 750) THEN Μεσαία (250-749) WHEN (length(text#7) < 2000) THEN Εκτενής (750-1999) ELSE Πολύ εκτενής (>=2000) END AS len_cat#11]
++- *(1) Filter (isnotnull(useful#4) AND (useful#4 >= 1))
+   +- *(1) ColumnarToRow
+      +- FileScan parquet [stars#3,useful#4,text#7,year#9] Batched: true, DataFilters: [isnotnull(useful#4), (useful#4 >= 1)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[file:/home/nicolaos/advdb/parquet/review], PartitionFilters: [isnotnull(year#9), (year#9 >= 2015), (year#9 <= 2021)], PushedFilters: [IsNotNull(useful), GreaterThanOrEqual(useful,1)], ReadSchema: struct<stars:double,useful:int,text:string>
+
+  cached partitions : 25 / 25
+  memory size       : 23.0 MiB
+  disk size         : 0.0 MiB

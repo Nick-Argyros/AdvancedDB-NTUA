@@ -1,0 +1,323 @@
+########## φιλτραρισμένο σύνολο ##########
+== Physical Plan ==
+InMemoryTableScan (1)
+   +- InMemoryRelation (2)
+         +- * Project (6)
+            +- * Filter (5)
+               +- * ColumnarToRow (4)
+                  +- Scan parquet  (3)
+
+
+(1) InMemoryTableScan
+Output [4]: [year#9, stars#3, useful#4, len_cat#11]
+Arguments: [year#9, stars#3, useful#4, len_cat#11]
+
+(2) InMemoryRelation
+Arguments: [year#9, stars#3, useful#4, len_cat#11], StorageLevel(disk, memory, deserialized, 1 replicas)
+
+(3) Scan parquet 
+Output [4]: [stars#3, useful#4, text#7, year#9]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PartitionFilters: [isnotnull(year#9), (year#9 >= 2015), (year#9 <= 2021)]
+PushedFilters: [IsNotNull(useful), GreaterThanOrEqual(useful,1)]
+ReadSchema: struct<stars:double,useful:int,text:string>
+
+(4) ColumnarToRow [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+(5) Filter [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+Condition : (isnotnull(useful#4) AND (useful#4 >= 1))
+
+(6) Project [codegen id : 1]
+Output [4]: [year#9, stars#3, useful#4, CASE WHEN (length(text#7) < 250) THEN Σύντομη (<250) WHEN (length(text#7) < 750) THEN Μεσαία (250-749) WHEN (length(text#7) < 2000) THEN Εκτενής (750-1999) ELSE Πολύ εκτενής (>=2000) END AS len_cat#11]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+
+
+########## (α) ##########
+== Physical Plan ==
+AdaptiveSparkPlan (23)
++- == Final Plan ==
+   ResultQueryStage (17)
+   +- * Sort (16)
+      +- AQEShuffleRead (15), coalesced
+         +- ShuffleQueryStage (14), Statistics(sizeInBytes=272.0 B, rowCount=4)
+            +- Exchange (13)
+               +- * HashAggregate (12)
+                  +- AQEShuffleRead (11), coalesced
+                     +- ShuffleQueryStage (10), Statistics(sizeInBytes=8.2 KiB, rowCount=100)
+                        +- Exchange (9)
+                           +- * HashAggregate (8)
+                              +- TableCacheQueryStage (7), Statistics(sizeInBytes=89.3 MiB, rowCount=2.18E+6)
+                                 +- InMemoryTableScan (1)
+                                       +- InMemoryRelation (2)
+                                             +- * Project (6)
+                                                +- * Filter (5)
+                                                   +- * ColumnarToRow (4)
+                                                      +- Scan parquet  (3)
++- == Initial Plan ==
+   Sort (22)
+   +- Exchange (21)
+      +- HashAggregate (20)
+         +- Exchange (19)
+            +- HashAggregate (18)
+               +- InMemoryTableScan (1)
+                     +- InMemoryRelation (2)
+                           +- * Project (6)
+                              +- * Filter (5)
+                                 +- * ColumnarToRow (4)
+                                    +- Scan parquet  (3)
+
+
+(1) InMemoryTableScan
+Output [3]: [stars#3, useful#4, len_cat#11]
+Arguments: [stars#3, useful#4, len_cat#11]
+
+(2) InMemoryRelation
+Arguments: [year#9, stars#3, useful#4, len_cat#11], StorageLevel(disk, memory, deserialized, 1 replicas)
+
+(3) Scan parquet 
+Output [4]: [stars#3, useful#4, text#7, year#9]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PartitionFilters: [isnotnull(year#9), (year#9 >= 2015), (year#9 <= 2021)]
+PushedFilters: [IsNotNull(useful), GreaterThanOrEqual(useful,1)]
+ReadSchema: struct<stars:double,useful:int,text:string>
+
+(4) ColumnarToRow [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+(5) Filter [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+Condition : (isnotnull(useful#4) AND (useful#4 >= 1))
+
+(6) Project [codegen id : 1]
+Output [4]: [year#9, stars#3, useful#4, CASE WHEN (length(text#7) < 250) THEN Σύντομη (<250) WHEN (length(text#7) < 750) THEN Μεσαία (250-749) WHEN (length(text#7) < 2000) THEN Εκτενής (750-1999) ELSE Πολύ εκτενής (>=2000) END AS len_cat#11]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+(7) TableCacheQueryStage
+Output [3]: [stars#3, useful#4, len_cat#11]
+Arguments: 0
+
+(8) HashAggregate [codegen id : 1]
+Input [3]: [stars#3, useful#4, len_cat#11]
+Keys [1]: [len_cat#11]
+Functions [3]: [partial_count(1), partial_avg(stars#3), partial_avg(useful#4)]
+Aggregate Attributes [5]: [count#116L, sum#117, count#118L, sum#119, count#120L]
+Results [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+
+(9) Exchange
+Input [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Arguments: hashpartitioning(len_cat#11, 200), ENSURE_REQUIREMENTS, [plan_id=75]
+
+(10) ShuffleQueryStage
+Output [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Arguments: 1
+
+(11) AQEShuffleRead
+Input [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Arguments: coalesced
+
+(12) HashAggregate [codegen id : 2]
+Input [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Keys [1]: [len_cat#11]
+Functions [3]: [count(1), avg(stars#3), avg(useful#4)]
+Aggregate Attributes [3]: [count(1)#39L, avg(stars#3)#40, avg(useful#4)#41]
+Results [4]: [len_cat#11, count(1)#39L AS n_reviews#32L, round(avg(stars#3)#40, 3) AS avg_stars#33, round(avg(useful#4)#41, 3) AS avg_useful#34]
+
+(13) Exchange
+Input [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: rangepartitioning(avg_useful#34 DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=101]
+
+(14) ShuffleQueryStage
+Output [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: 2
+
+(15) AQEShuffleRead
+Input [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: coalesced
+
+(16) Sort [codegen id : 3]
+Input [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: [avg_useful#34 DESC NULLS LAST], true, 0
+
+(17) ResultQueryStage
+Output [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: 3
+
+(18) HashAggregate
+Input [3]: [stars#3, useful#4, len_cat#11]
+Keys [1]: [len_cat#11]
+Functions [3]: [partial_count(1), partial_avg(stars#3), partial_avg(useful#4)]
+Aggregate Attributes [5]: [count#116L, sum#117, count#118L, sum#119, count#120L]
+Results [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+
+(19) Exchange
+Input [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Arguments: hashpartitioning(len_cat#11, 200), ENSURE_REQUIREMENTS, [plan_id=30]
+
+(20) HashAggregate
+Input [6]: [len_cat#11, count#121L, sum#122, count#123L, sum#124, count#125L]
+Keys [1]: [len_cat#11]
+Functions [3]: [count(1), avg(stars#3), avg(useful#4)]
+Aggregate Attributes [3]: [count(1)#39L, avg(stars#3)#40, avg(useful#4)#41]
+Results [4]: [len_cat#11, count(1)#39L AS n_reviews#32L, round(avg(stars#3)#40, 3) AS avg_stars#33, round(avg(useful#4)#41, 3) AS avg_useful#34]
+
+(21) Exchange
+Input [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: rangepartitioning(avg_useful#34 DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=33]
+
+(22) Sort
+Input [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: [avg_useful#34 DESC NULLS LAST], true, 0
+
+(23) AdaptiveSparkPlan
+Output [4]: [len_cat#11, n_reviews#32L, avg_stars#33, avg_useful#34]
+Arguments: isFinalPlan=true
+
+
+
+########## (β) ##########
+== Physical Plan ==
+AdaptiveSparkPlan (23)
++- == Final Plan ==
+   ResultQueryStage (17)
+   +- * Sort (16)
+      +- AQEShuffleRead (15), coalesced
+         +- ShuffleQueryStage (14), Statistics(sizeInBytes=392.0 B, rowCount=7)
+            +- Exchange (13)
+               +- * HashAggregate (12)
+                  +- AQEShuffleRead (11), coalesced
+                     +- ShuffleQueryStage (10), Statistics(sizeInBytes=8.6 KiB, rowCount=100)
+                        +- Exchange (9)
+                           +- * HashAggregate (8)
+                              +- TableCacheQueryStage (7), Statistics(sizeInBytes=89.3 MiB, rowCount=2.18E+6)
+                                 +- InMemoryTableScan (1)
+                                       +- InMemoryRelation (2)
+                                             +- * Project (6)
+                                                +- * Filter (5)
+                                                   +- * ColumnarToRow (4)
+                                                      +- Scan parquet  (3)
++- == Initial Plan ==
+   Sort (22)
+   +- Exchange (21)
+      +- HashAggregate (20)
+         +- Exchange (19)
+            +- HashAggregate (18)
+               +- InMemoryTableScan (1)
+                     +- InMemoryRelation (2)
+                           +- * Project (6)
+                              +- * Filter (5)
+                                 +- * ColumnarToRow (4)
+                                    +- Scan parquet  (3)
+
+
+(1) InMemoryTableScan
+Output [2]: [year#9, len_cat#11]
+Arguments: [year#9, len_cat#11]
+
+(2) InMemoryRelation
+Arguments: [year#9, stars#3, useful#4, len_cat#11], StorageLevel(disk, memory, deserialized, 1 replicas)
+
+(3) Scan parquet 
+Output [4]: [stars#3, useful#4, text#7, year#9]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PartitionFilters: [isnotnull(year#9), (year#9 >= 2015), (year#9 <= 2021)]
+PushedFilters: [IsNotNull(useful), GreaterThanOrEqual(useful,1)]
+ReadSchema: struct<stars:double,useful:int,text:string>
+
+(4) ColumnarToRow [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+(5) Filter [codegen id : 1]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+Condition : (isnotnull(useful#4) AND (useful#4 >= 1))
+
+(6) Project [codegen id : 1]
+Output [4]: [year#9, stars#3, useful#4, CASE WHEN (length(text#7) < 250) THEN Σύντομη (<250) WHEN (length(text#7) < 750) THEN Μεσαία (250-749) WHEN (length(text#7) < 2000) THEN Εκτενής (750-1999) ELSE Πολύ εκτενής (>=2000) END AS len_cat#11]
+Input [4]: [stars#3, useful#4, text#7, year#9]
+
+(7) TableCacheQueryStage
+Output [2]: [year#9, len_cat#11]
+Arguments: 0
+
+(8) HashAggregate [codegen id : 1]
+Input [2]: [year#9, len_cat#11]
+Keys [1]: [year#9]
+Functions [5]: [partial_count(1), partial_avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)]
+Aggregate Attributes [9]: [count#246L, sum#247, count#248L, sum#249, count#250L, sum#251, count#252L, sum#253, count#254L]
+Results [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+
+(9) Exchange
+Input [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Arguments: hashpartitioning(year#9, 200), ENSURE_REQUIREMENTS, [plan_id=181]
+
+(10) ShuffleQueryStage
+Output [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Arguments: 1
+
+(11) AQEShuffleRead
+Input [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Arguments: coalesced
+
+(12) HashAggregate [codegen id : 2]
+Input [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Keys [1]: [year#9]
+Functions [5]: [count(1), avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)]
+Aggregate Attributes [5]: [count(1)#51L, avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END)#52, avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END)#53, avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END)#54, avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)#55]
+Results [6]: [year#9, count(1)#51L AS n_reviews#42L, round((avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END)#52 * 100.0), 2) AS pct_short#43, round((avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END)#53 * 100.0), 2) AS pct_medium#44, round((avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END)#54 * 100.0), 2) AS pct_long#45, round((avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)#55 * 100.0), 2) AS pct_very_long#46]
+
+(13) Exchange
+Input [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=207]
+
+(14) ShuffleQueryStage
+Output [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: 2
+
+(15) AQEShuffleRead
+Input [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: coalesced
+
+(16) Sort [codegen id : 3]
+Input [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(17) ResultQueryStage
+Output [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: 3
+
+(18) HashAggregate
+Input [2]: [year#9, len_cat#11]
+Keys [1]: [year#9]
+Functions [5]: [partial_count(1), partial_avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END), partial_avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)]
+Aggregate Attributes [9]: [count#246L, sum#247, count#248L, sum#249, count#250L, sum#251, count#252L, sum#253, count#254L]
+Results [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+
+(19) Exchange
+Input [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Arguments: hashpartitioning(year#9, 200), ENSURE_REQUIREMENTS, [plan_id=136]
+
+(20) HashAggregate
+Input [10]: [year#9, count#255L, sum#256, count#257L, sum#258, count#259L, sum#260, count#261L, sum#262, count#263L]
+Keys [1]: [year#9]
+Functions [5]: [count(1), avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END), avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)]
+Aggregate Attributes [5]: [count(1)#51L, avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END)#52, avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END)#53, avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END)#54, avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)#55]
+Results [6]: [year#9, count(1)#51L AS n_reviews#42L, round((avg(CASE WHEN (len_cat#11 = Σύντομη (<250)) THEN 1 ELSE 0 END)#52 * 100.0), 2) AS pct_short#43, round((avg(CASE WHEN (len_cat#11 = Μεσαία (250-749)) THEN 1 ELSE 0 END)#53 * 100.0), 2) AS pct_medium#44, round((avg(CASE WHEN (len_cat#11 = Εκτενής (750-1999)) THEN 1 ELSE 0 END)#54 * 100.0), 2) AS pct_long#45, round((avg(CASE WHEN (len_cat#11 = Πολύ εκτενής (>=2000)) THEN 1 ELSE 0 END)#55 * 100.0), 2) AS pct_very_long#46]
+
+(21) Exchange
+Input [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: rangepartitioning(year#9 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=139]
+
+(22) Sort
+Input [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: [year#9 ASC NULLS FIRST], true, 0
+
+(23) AdaptiveSparkPlan
+Output [6]: [year#9, n_reviews#42L, pct_short#43, pct_medium#44, pct_long#45, pct_very_long#46]
+Arguments: isFinalPlan=true
+
+

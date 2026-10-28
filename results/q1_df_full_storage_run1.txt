@@ -1,0 +1,6 @@
+*(1) ColumnarToRow
++- FileScan parquet [review_id#0,user_id#1,business_id#2,stars#3,useful#4,funny#5,cool#6,text#7,date#8,year#9] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[file:/home/nicolaos/advdb/parquet/review], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<review_id:string,user_id:string,business_id:string,stars:double,useful:int,funny:int,cool:...
+
+  cached partitions : 44 / 44
+  memory size       : 2869.0 MiB
+  disk size         : 1049.2 MiB
