@@ -1,0 +1,216 @@
+== Physical Plan ==
+AdaptiveSparkPlan (36)
++- Sort (35)
+   +- Exchange (34)
+      +- Project (33)
+         +- SortMergeJoin FullOuter (32)
+            :- Sort (16)
+            :  +- HashAggregate (15)
+            :     +- Exchange (14)
+            :        +- HashAggregate (13)
+            :           +- Project (12)
+            :              +- BroadcastHashJoin Inner BuildRight (11)
+            :                 :- Project (7)
+            :                 :  +- CartesianProduct Inner (6)
+            :                 :     :- Filter (2)
+            :                 :     :  +- Scan parquet  (1)
+            :                 :     +- Project (5)
+            :                 :        +- Filter (4)
+            :                 :           +- Scan parquet  (3)
+            :                 +- BroadcastExchange (10)
+            :                    +- Filter (9)
+            :                       +- Scan parquet  (8)
+            +- Sort (31)
+               +- HashAggregate (30)
+                  +- Exchange (29)
+                     +- HashAggregate (28)
+                        +- Project (27)
+                           +- SortMergeJoin LeftAnti (26)
+                              :- Sort (20)
+                              :  +- Exchange (19)
+                              :     +- Project (18)
+                              :        +- Scan parquet  (17)
+                              +- Sort (25)
+                                 +- Exchange (24)
+                                    +- Project (23)
+                                       +- Filter (22)
+                                          +- Scan parquet  (21)
+
+
+(1) Scan parquet 
+Output [4]: [user_id#170, business_id#171, stars#172, year#178]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PushedFilters: [IsNotNull(user_id), IsNotNull(business_id)]
+ReadSchema: struct<user_id:string,business_id:string,stars:double>
+
+(2) Filter
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Condition : (isnotnull(user_id#170) AND isnotnull(business_id#171))
+
+(3) Scan parquet 
+Output [3]: [user_id#179, yelping_since#182, elite#186]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/user]
+PushedFilters: [IsNotNull(user_id)]
+ReadSchema: struct<user_id:string,yelping_since:timestamp,elite:string>
+
+(4) Filter
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+Condition : isnotnull(user_id#179)
+
+(5) Project
+Output [3]: [user_id#179, year(cast(yelping_since#182 as date)) AS reg_year#190, transform(filter(split(regexp_replace(coalesce(elite#186, ), (^|,)20,20(,|$), $12020$2, 1), ,, -1), lambdafunction(RLIKE(lambda x#60, ^[0-9]{4}$), lambda x#60, false)), lambdafunction(cast(lambda x#61 as int), lambda x#61, false)) AS elite_years#191]
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+
+(6) CartesianProduct
+Join type: Inner
+Join condition: (user_id#170 = user_id#179)
+
+(7) Project
+Output [5]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191]
+Input [7]: [user_id#170, business_id#171, stars#172, year#178, user_id#179, reg_year#190, elite_years#191]
+
+(8) Scan parquet 
+Output [2]: [business_id#192, stars#200]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/business]
+PushedFilters: [IsNotNull(business_id)]
+ReadSchema: struct<business_id:string,stars:double>
+
+(9) Filter
+Input [2]: [business_id#192, stars#200]
+Condition : isnotnull(business_id#192)
+
+(10) BroadcastExchange
+Input [2]: [business_id#192, stars#200]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=106]
+
+(11) BroadcastHashJoin
+Left keys [1]: [business_id#171]
+Right keys [1]: [business_id#192]
+Join type: Inner
+Join condition: None
+
+(12) Project
+Output [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Input [7]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191, business_id#192, stars#200]
+
+(13) HashAggregate
+Input [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Keys [1]: [reg_year#190]
+Functions [4]: [partial_count(1), partial_avg(stars#172), partial_avg((stars#172 - stars#200)), partial_avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [7]: [count#237L, sum#238, count#239L, sum#240, count#241L, sum#242, count#243L]
+Results [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+
+(14) Exchange
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Arguments: hashpartitioning(reg_year#190, 200), ENSURE_REQUIREMENTS, [plan_id=111]
+
+(15) HashAggregate
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Keys [1]: [reg_year#190]
+Functions [4]: [count(1), avg(stars#172), avg((stars#172 - stars#200)), avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [4]: [count(1)#58L, avg(stars#172)#65, avg((stars#172 - stars#200))#66, avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67]
+Results [5]: [reg_year#190, count(1)#58L AS n_reviews#69L, avg(stars#172)#65 AS avg_stars#70, avg((stars#172 - stars#200))#66 AS avg_strictness#71, (avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67 * 100.0) AS pct_elite#72]
+
+(16) Sort
+Input [5]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72]
+Arguments: [reg_year#190 ASC NULLS FIRST], false, 0
+
+(17) Scan parquet 
+Output [2]: [user_id#210, yelping_since#213]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/user]
+ReadSchema: struct<user_id:string,yelping_since:timestamp>
+
+(18) Project
+Output [2]: [user_id#210, year(cast(yelping_since#213 as date)) AS reg_year#221]
+Input [2]: [user_id#210, yelping_since#213]
+
+(19) Exchange
+Input [2]: [user_id#210, reg_year#221]
+Arguments: hashpartitioning(user_id#210, 200), ENSURE_REQUIREMENTS, [plan_id=114]
+
+(20) Sort
+Input [2]: [user_id#210, reg_year#221]
+Arguments: [user_id#210 ASC NULLS FIRST], false, 0
+
+(21) Scan parquet 
+Output [2]: [user_id#227, year#235]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PushedFilters: [IsNotNull(user_id)]
+ReadSchema: struct<user_id:string>
+
+(22) Filter
+Input [2]: [user_id#227, year#235]
+Condition : isnotnull(user_id#227)
+
+(23) Project
+Output [1]: [user_id#227]
+Input [2]: [user_id#227, year#235]
+
+(24) Exchange
+Input [1]: [user_id#227]
+Arguments: hashpartitioning(user_id#227, 200), ENSURE_REQUIREMENTS, [plan_id=115]
+
+(25) Sort
+Input [1]: [user_id#227]
+Arguments: [user_id#227 ASC NULLS FIRST], false, 0
+
+(26) SortMergeJoin
+Left keys [1]: [user_id#210]
+Right keys [1]: [user_id#227]
+Join type: LeftAnti
+Join condition: None
+
+(27) Project
+Output [1]: [reg_year#221]
+Input [2]: [user_id#210, reg_year#221]
+
+(28) HashAggregate
+Input [1]: [reg_year#221]
+Keys [1]: [reg_year#221]
+Functions [1]: [partial_count(1)]
+Aggregate Attributes [1]: [count#251L]
+Results [2]: [reg_year#221, count#252L]
+
+(29) Exchange
+Input [2]: [reg_year#221, count#252L]
+Arguments: hashpartitioning(reg_year#221, 200), ENSURE_REQUIREMENTS, [plan_id=122]
+
+(30) HashAggregate
+Input [2]: [reg_year#221, count#252L]
+Keys [1]: [reg_year#221]
+Functions [1]: [count(1)]
+Aggregate Attributes [1]: [count(1)#59L]
+Results [2]: [reg_year#221, count(1)#59L AS users_without_reviews#74L]
+
+(31) Sort
+Input [2]: [reg_year#221, users_without_reviews#74L]
+Arguments: [reg_year#221 ASC NULLS FIRST], false, 0
+
+(32) SortMergeJoin
+Left keys [1]: [reg_year#190]
+Right keys [1]: [reg_year#221]
+Join type: FullOuter
+Join condition: None
+
+(33) Project
+Output [6]: [coalesce(reg_year#190, reg_year#221) AS reg_year#35, coalesce(n_reviews#69L, 0) AS n_reviews#36L, round(avg_stars#70, 3) AS avg_stars#37, round(avg_strictness#71, 3) AS avg_strictness#38, round(pct_elite#72, 2) AS pct_elite#39, coalesce(users_without_reviews#74L, 0) AS users_without_reviews#40L]
+Input [7]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72, reg_year#221, users_without_reviews#74L]
+
+(34) Exchange
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: rangepartitioning(reg_year#35 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=131]
+
+(35) Sort
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: [reg_year#35 ASC NULLS FIRST], true, 0
+
+(36) AdaptiveSparkPlan
+Output [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: isFinalPlan=false
+
+

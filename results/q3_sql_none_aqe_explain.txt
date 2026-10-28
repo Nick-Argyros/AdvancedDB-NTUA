@@ -1,0 +1,415 @@
+== Physical Plan ==
+AdaptiveSparkPlan (73)
++- == Final Plan ==
+   ResultQueryStage (36)
+   +- * Sort (35)
+      +- AQEShuffleRead (34), coalesced
+         +- ShuffleQueryStage (33), Statistics(sizeInBytes=1064.0 B, rowCount=19)
+            +- Exchange (32)
+               +- * Project (31)
+                  +- * Project (30)
+                     +- * HashAggregate (29)
+                        +- AQEShuffleRead (28), coalesced
+                           +- ShuffleQueryStage (27), Statistics(sizeInBytes=9.4 KiB, rowCount=133)
+                              +- Exchange (26)
+                                 +- * HashAggregate (25)
+                                    +- * Project (24)
+                                       +- * BroadcastHashJoin Inner BuildRight (23)
+                                          :- * Project (17)
+                                          :  +- * SortMergeJoin Inner (16)
+                                          :     :- * Sort (7)
+                                          :     :  +- AQEShuffleRead (6), coalesced
+                                          :     :     +- ShuffleQueryStage (5), Statistics(sizeInBytes=586.6 MiB, rowCount=6.99E+6)
+                                          :     :        +- Exchange (4)
+                                          :     :           +- * Filter (3)
+                                          :     :              +- * ColumnarToRow (2)
+                                          :     :                 +- Scan parquet  (1)
+                                          :     +- * Sort (15)
+                                          :        +- AQEShuffleRead (14), coalesced
+                                          :           +- ShuffleQueryStage (13), Statistics(sizeInBytes=123.5 MiB, rowCount=1.99E+6)
+                                          :              +- Exchange (12)
+                                          :                 +- Project (11)
+                                          :                    +- * Filter (10)
+                                          :                       +- * ColumnarToRow (9)
+                                          :                          +- Scan parquet  (8)
+                                          +- BroadcastQueryStage (22), Statistics(sizeInBytes=24.0 MiB, rowCount=1.50E+5)
+                                             +- BroadcastExchange (21)
+                                                +- * Filter (20)
+                                                   +- * ColumnarToRow (19)
+                                                      +- Scan parquet  (18)
++- == Initial Plan ==
+   Sort (72)
+   +- Exchange (71)
+      +- Project (70)
+         +- SortMergeJoin FullOuter (69)
+            :- Sort (53)
+            :  +- HashAggregate (52)
+            :     +- Exchange (51)
+            :        +- HashAggregate (50)
+            :           +- Project (49)
+            :              +- BroadcastHashJoin Inner BuildRight (48)
+            :                 :- Project (45)
+            :                 :  +- SortMergeJoin Inner (44)
+            :                 :     :- Sort (39)
+            :                 :     :  +- Exchange (38)
+            :                 :     :     +- Filter (37)
+            :                 :     :        +- Scan parquet  (1)
+            :                 :     +- Sort (43)
+            :                 :        +- Exchange (42)
+            :                 :           +- Project (41)
+            :                 :              +- Filter (40)
+            :                 :                 +- Scan parquet  (8)
+            :                 +- BroadcastExchange (47)
+            :                    +- Filter (46)
+            :                       +- Scan parquet  (18)
+            +- Sort (68)
+               +- HashAggregate (67)
+                  +- Exchange (66)
+                     +- HashAggregate (65)
+                        +- Project (64)
+                           +- SortMergeJoin LeftAnti (63)
+                              :- Sort (57)
+                              :  +- Exchange (56)
+                              :     +- Project (55)
+                              :        +- Scan parquet  (54)
+                              +- Sort (62)
+                                 +- Exchange (61)
+                                    +- Project (60)
+                                       +- Filter (59)
+                                          +- Scan parquet  (58)
+
+
+(1) Scan parquet 
+Output [4]: [user_id#170, business_id#171, stars#172, year#178]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PushedFilters: [IsNotNull(user_id), IsNotNull(business_id)]
+ReadSchema: struct<user_id:string,business_id:string,stars:double>
+
+(2) ColumnarToRow [codegen id : 1]
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+
+(3) Filter [codegen id : 1]
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Condition : (isnotnull(user_id#170) AND isnotnull(business_id#171))
+
+(4) Exchange
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: hashpartitioning(user_id#170, 200), ENSURE_REQUIREMENTS, [plan_id=218]
+
+(5) ShuffleQueryStage
+Output [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: 0
+
+(6) AQEShuffleRead
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: coalesced
+
+(7) Sort [codegen id : 9]
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: [user_id#170 ASC NULLS FIRST], false, 0
+
+(8) Scan parquet 
+Output [3]: [user_id#179, yelping_since#182, elite#186]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/user]
+PushedFilters: [IsNotNull(user_id)]
+ReadSchema: struct<user_id:string,yelping_since:timestamp,elite:string>
+
+(9) ColumnarToRow [codegen id : 2]
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+
+(10) Filter [codegen id : 2]
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+Condition : isnotnull(user_id#179)
+
+(11) Project
+Output [3]: [user_id#179, year(cast(yelping_since#182 as date)) AS reg_year#190, transform(filter(split(regexp_replace(coalesce(elite#186, ), (^|,)20,20(,|$), $12020$2, 1), ,, -1), lambdafunction(RLIKE(lambda x#60, ^[0-9]{4}$), lambda x#60, false)), lambdafunction(cast(lambda x#61 as int), lambda x#61, false)) AS elite_years#191]
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+
+(12) Exchange
+Input [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: hashpartitioning(user_id#179, 200), ENSURE_REQUIREMENTS, [plan_id=237]
+
+(13) ShuffleQueryStage
+Output [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: 1
+
+(14) AQEShuffleRead
+Input [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: coalesced
+
+(15) Sort [codegen id : 10]
+Input [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: [user_id#179 ASC NULLS FIRST], false, 0
+
+(16) SortMergeJoin [codegen id : 11]
+Left keys [1]: [user_id#170]
+Right keys [1]: [user_id#179]
+Join type: Inner
+Join condition: None
+
+(17) Project [codegen id : 11]
+Output [5]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191]
+Input [7]: [user_id#170, business_id#171, stars#172, year#178, user_id#179, reg_year#190, elite_years#191]
+
+(18) Scan parquet 
+Output [2]: [business_id#192, stars#200]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/business]
+PushedFilters: [IsNotNull(business_id)]
+ReadSchema: struct<business_id:string,stars:double>
+
+(19) ColumnarToRow [codegen id : 3]
+Input [2]: [business_id#192, stars#200]
+
+(20) Filter [codegen id : 3]
+Input [2]: [business_id#192, stars#200]
+Condition : isnotnull(business_id#192)
+
+(21) BroadcastExchange
+Input [2]: [business_id#192, stars#200]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=258]
+
+(22) BroadcastQueryStage
+Output [2]: [business_id#192, stars#200]
+Arguments: 2
+
+(23) BroadcastHashJoin [codegen id : 11]
+Left keys [1]: [business_id#171]
+Right keys [1]: [business_id#192]
+Join type: Inner
+Join condition: None
+
+(24) Project [codegen id : 11]
+Output [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Input [7]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191, business_id#192, stars#200]
+
+(25) HashAggregate [codegen id : 11]
+Input [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Keys [1]: [reg_year#190]
+Functions [4]: [partial_count(1), partial_avg(stars#172), partial_avg((stars#172 - stars#200)), partial_avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [7]: [count#237L, sum#238, count#239L, sum#240, count#241L, sum#242, count#243L]
+Results [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+
+(26) Exchange
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Arguments: hashpartitioning(reg_year#190, 200), ENSURE_REQUIREMENTS, [plan_id=777]
+
+(27) ShuffleQueryStage
+Output [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Arguments: 6
+
+(28) AQEShuffleRead
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Arguments: coalesced
+
+(29) HashAggregate [codegen id : 12]
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Keys [1]: [reg_year#190]
+Functions [4]: [count(1), avg(stars#172), avg((stars#172 - stars#200)), avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [4]: [count(1)#58L, avg(stars#172)#65, avg((stars#172 - stars#200))#66, avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67]
+Results [5]: [reg_year#190, count(1)#58L AS n_reviews#69L, avg(stars#172)#65 AS avg_stars#70, avg((stars#172 - stars#200))#66 AS avg_strictness#71, (avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67 * 100.0) AS pct_elite#72]
+
+(30) Project [codegen id : 12]
+Output [7]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72, cast(null as int) AS reg_year#221, cast(null as bigint) AS users_without_reviews#74L]
+Input [5]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72]
+
+(31) Project [codegen id : 12]
+Output [6]: [coalesce(reg_year#190, reg_year#221) AS reg_year#35, coalesce(n_reviews#69L, 0) AS n_reviews#36L, round(avg_stars#70, 3) AS avg_stars#37, round(avg_strictness#71, 3) AS avg_strictness#38, round(pct_elite#72, 2) AS pct_elite#39, coalesce(users_without_reviews#74L, 0) AS users_without_reviews#40L]
+Input [7]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72, reg_year#221, users_without_reviews#74L]
+
+(32) Exchange
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: rangepartitioning(reg_year#35 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=853]
+
+(33) ShuffleQueryStage
+Output [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: 7
+
+(34) AQEShuffleRead
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: coalesced
+
+(35) Sort [codegen id : 13]
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: [reg_year#35 ASC NULLS FIRST], true, 0
+
+(36) ResultQueryStage
+Output [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: 8
+
+(37) Filter
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Condition : (isnotnull(user_id#170) AND isnotnull(business_id#171))
+
+(38) Exchange
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: hashpartitioning(user_id#170, 200), ENSURE_REQUIREMENTS, [plan_id=107]
+
+(39) Sort
+Input [4]: [user_id#170, business_id#171, stars#172, year#178]
+Arguments: [user_id#170 ASC NULLS FIRST], false, 0
+
+(40) Filter
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+Condition : isnotnull(user_id#179)
+
+(41) Project
+Output [3]: [user_id#179, year(cast(yelping_since#182 as date)) AS reg_year#190, transform(filter(split(regexp_replace(coalesce(elite#186, ), (^|,)20,20(,|$), $12020$2, 1), ,, -1), lambdafunction(RLIKE(lambda x#60, ^[0-9]{4}$), lambda x#60, false)), lambdafunction(cast(lambda x#61 as int), lambda x#61, false)) AS elite_years#191]
+Input [3]: [user_id#179, yelping_since#182, elite#186]
+
+(42) Exchange
+Input [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: hashpartitioning(user_id#179, 200), ENSURE_REQUIREMENTS, [plan_id=108]
+
+(43) Sort
+Input [3]: [user_id#179, reg_year#190, elite_years#191]
+Arguments: [user_id#179 ASC NULLS FIRST], false, 0
+
+(44) SortMergeJoin
+Left keys [1]: [user_id#170]
+Right keys [1]: [user_id#179]
+Join type: Inner
+Join condition: None
+
+(45) Project
+Output [5]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191]
+Input [7]: [user_id#170, business_id#171, stars#172, year#178, user_id#179, reg_year#190, elite_years#191]
+
+(46) Filter
+Input [2]: [business_id#192, stars#200]
+Condition : isnotnull(business_id#192)
+
+(47) BroadcastExchange
+Input [2]: [business_id#192, stars#200]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=114]
+
+(48) BroadcastHashJoin
+Left keys [1]: [business_id#171]
+Right keys [1]: [business_id#192]
+Join type: Inner
+Join condition: None
+
+(49) Project
+Output [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Input [7]: [business_id#171, stars#172, year#178, reg_year#190, elite_years#191, business_id#192, stars#200]
+
+(50) HashAggregate
+Input [5]: [stars#172, year#178, reg_year#190, elite_years#191, stars#200]
+Keys [1]: [reg_year#190]
+Functions [4]: [partial_count(1), partial_avg(stars#172), partial_avg((stars#172 - stars#200)), partial_avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [7]: [count#237L, sum#238, count#239L, sum#240, count#241L, sum#242, count#243L]
+Results [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+
+(51) Exchange
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Arguments: hashpartitioning(reg_year#190, 200), ENSURE_REQUIREMENTS, [plan_id=119]
+
+(52) HashAggregate
+Input [8]: [reg_year#190, count#244L, sum#245, count#246L, sum#247, count#248L, sum#249, count#250L]
+Keys [1]: [reg_year#190]
+Functions [4]: [count(1), avg(stars#172), avg((stars#172 - stars#200)), avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)]
+Aggregate Attributes [4]: [count(1)#58L, avg(stars#172)#65, avg((stars#172 - stars#200))#66, avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67]
+Results [5]: [reg_year#190, count(1)#58L AS n_reviews#69L, avg(stars#172)#65 AS avg_stars#70, avg((stars#172 - stars#200))#66 AS avg_strictness#71, (avg(CASE WHEN array_contains(elite_years#191, year#178) THEN 1 ELSE 0 END)#67 * 100.0) AS pct_elite#72]
+
+(53) Sort
+Input [5]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72]
+Arguments: [reg_year#190 ASC NULLS FIRST], false, 0
+
+(54) Scan parquet 
+Output [2]: [user_id#210, yelping_since#213]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/user]
+ReadSchema: struct<user_id:string,yelping_since:timestamp>
+
+(55) Project
+Output [2]: [user_id#210, year(cast(yelping_since#213 as date)) AS reg_year#221]
+Input [2]: [user_id#210, yelping_since#213]
+
+(56) Exchange
+Input [2]: [user_id#210, reg_year#221]
+Arguments: hashpartitioning(user_id#210, 200), ENSURE_REQUIREMENTS, [plan_id=122]
+
+(57) Sort
+Input [2]: [user_id#210, reg_year#221]
+Arguments: [user_id#210 ASC NULLS FIRST], false, 0
+
+(58) Scan parquet 
+Output [2]: [user_id#227, year#235]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PushedFilters: [IsNotNull(user_id)]
+ReadSchema: struct<user_id:string>
+
+(59) Filter
+Input [2]: [user_id#227, year#235]
+Condition : isnotnull(user_id#227)
+
+(60) Project
+Output [1]: [user_id#227]
+Input [2]: [user_id#227, year#235]
+
+(61) Exchange
+Input [1]: [user_id#227]
+Arguments: hashpartitioning(user_id#227, 200), ENSURE_REQUIREMENTS, [plan_id=123]
+
+(62) Sort
+Input [1]: [user_id#227]
+Arguments: [user_id#227 ASC NULLS FIRST], false, 0
+
+(63) SortMergeJoin
+Left keys [1]: [user_id#210]
+Right keys [1]: [user_id#227]
+Join type: LeftAnti
+Join condition: None
+
+(64) Project
+Output [1]: [reg_year#221]
+Input [2]: [user_id#210, reg_year#221]
+
+(65) HashAggregate
+Input [1]: [reg_year#221]
+Keys [1]: [reg_year#221]
+Functions [1]: [partial_count(1)]
+Aggregate Attributes [1]: [count#251L]
+Results [2]: [reg_year#221, count#252L]
+
+(66) Exchange
+Input [2]: [reg_year#221, count#252L]
+Arguments: hashpartitioning(reg_year#221, 200), ENSURE_REQUIREMENTS, [plan_id=130]
+
+(67) HashAggregate
+Input [2]: [reg_year#221, count#252L]
+Keys [1]: [reg_year#221]
+Functions [1]: [count(1)]
+Aggregate Attributes [1]: [count(1)#59L]
+Results [2]: [reg_year#221, count(1)#59L AS users_without_reviews#74L]
+
+(68) Sort
+Input [2]: [reg_year#221, users_without_reviews#74L]
+Arguments: [reg_year#221 ASC NULLS FIRST], false, 0
+
+(69) SortMergeJoin
+Left keys [1]: [reg_year#190]
+Right keys [1]: [reg_year#221]
+Join type: FullOuter
+Join condition: None
+
+(70) Project
+Output [6]: [coalesce(reg_year#190, reg_year#221) AS reg_year#35, coalesce(n_reviews#69L, 0) AS n_reviews#36L, round(avg_stars#70, 3) AS avg_stars#37, round(avg_strictness#71, 3) AS avg_strictness#38, round(pct_elite#72, 2) AS pct_elite#39, coalesce(users_without_reviews#74L, 0) AS users_without_reviews#40L]
+Input [7]: [reg_year#190, n_reviews#69L, avg_stars#70, avg_strictness#71, pct_elite#72, reg_year#221, users_without_reviews#74L]
+
+(71) Exchange
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: rangepartitioning(reg_year#35 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=139]
+
+(72) Sort
+Input [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: [reg_year#35 ASC NULLS FIRST], true, 0
+
+(73) AdaptiveSparkPlan
+Output [6]: [reg_year#35, n_reviews#36L, avg_stars#37, avg_strictness#38, pct_elite#39, users_without_reviews#40L]
+Arguments: isFinalPlan=true
+
+
