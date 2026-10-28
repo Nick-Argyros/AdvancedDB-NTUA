@@ -1,0 +1,437 @@
+== Physical Plan ==
+AdaptiveSparkPlan (78)
++- == Final Plan ==
+   ResultQueryStage (47)
+   +- * Sort (46)
+      +- AQEShuffleRead (45), coalesced
+         +- ShuffleQueryStage (44), Statistics(sizeInBytes=3.3 KiB, rowCount=42)
+            +- Exchange (43)
+               +- * Project (42)
+                  +- * Filter (41)
+                     +- Window (40)
+                        +- WindowGroupLimit (39)
+                           +- * Sort (38)
+                              +- AQEShuffleRead (37), coalesced
+                                 +- ShuffleQueryStage (36), Statistics(sizeInBytes=11.7 KiB, rowCount=168)
+                                    +- Exchange (35)
+                                       +- WindowGroupLimit (34)
+                                          +- * Sort (33)
+                                             +- * Filter (32)
+                                                +- * HashAggregate (31)
+                                                   +- AQEShuffleRead (30), coalesced
+                                                      +- ShuffleQueryStage (29), Statistics(sizeInBytes=32.1 MiB, rowCount=3.80E+5)
+                                                         +- Exchange (28)
+                                                            +- * HashAggregate (27)
+                                                               +- * Project (26)
+                                                                  +- * Generate (25)
+                                                                     +- * Project (24)
+                                                                        +- * BroadcastHashJoin Inner BuildRight (23)
+                                                                           :- * Project (4)
+                                                                           :  +- * Filter (3)
+                                                                           :     +- * ColumnarToRow (2)
+                                                                           :        +- Scan parquet  (1)
+                                                                           +- BroadcastQueryStage (22), Statistics(sizeInBytes=40.0 MiB, rowCount=1.50E+5)
+                                                                              +- BroadcastExchange (21)
+                                                                                 +- * BroadcastHashJoin LeftSemi BuildRight (20)
+                                                                                    :- * Filter (7)
+                                                                                    :  +- * ColumnarToRow (6)
+                                                                                    :     +- Scan parquet  (5)
+                                                                                    +- BroadcastQueryStage (19), Statistics(sizeInBytes=8.0 MiB, rowCount=14)
+                                                                                       +- BroadcastExchange (18)
+                                                                                          +- * Project (17)
+                                                                                             +- * Filter (16)
+                                                                                                +- * HashAggregate (15)
+                                                                                                   +- AQEShuffleRead (14), coalesced
+                                                                                                      +- ShuffleQueryStage (13), Statistics(sizeInBytes=2.7 KiB, rowCount=87)
+                                                                                                         +- Exchange (12)
+                                                                                                            +- * HashAggregate (11)
+                                                                                                               +- * Filter (10)
+                                                                                                                  +- * ColumnarToRow (9)
+                                                                                                                     +- Scan parquet  (8)
++- == Initial Plan ==
+   Sort (77)
+   +- Exchange (76)
+      +- Project (75)
+         +- Filter (74)
+            +- Window (73)
+               +- WindowGroupLimit (72)
+                  +- Sort (71)
+                     +- Exchange (70)
+                        +- WindowGroupLimit (69)
+                           +- Sort (68)
+                              +- Filter (67)
+                                 +- HashAggregate (66)
+                                    +- Exchange (65)
+                                       +- HashAggregate (64)
+                                          +- Project (63)
+                                             +- Generate (62)
+                                                +- Project (61)
+                                                   +- BroadcastHashJoin Inner BuildRight (60)
+                                                      :- Project (49)
+                                                      :  +- Filter (48)
+                                                      :     +- Scan parquet  (1)
+                                                      +- BroadcastExchange (59)
+                                                         +- BroadcastHashJoin LeftSemi BuildRight (58)
+                                                            :- Filter (50)
+                                                            :  +- Scan parquet  (5)
+                                                            +- BroadcastExchange (57)
+                                                               +- Project (56)
+                                                                  +- Filter (55)
+                                                                     +- HashAggregate (54)
+                                                                        +- Exchange (53)
+                                                                           +- HashAggregate (52)
+                                                                              +- Filter (51)
+                                                                                 +- Scan parquet  (8)
+
+
+(1) Scan parquet 
+Output [3]: [business_id#192, stars#193, year#199]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/review]
+PushedFilters: [IsNotNull(business_id)]
+ReadSchema: struct<business_id:string,stars:double>
+
+(2) ColumnarToRow [codegen id : 4]
+Input [3]: [business_id#192, stars#193, year#199]
+
+(3) Filter [codegen id : 4]
+Input [3]: [business_id#192, stars#193, year#199]
+Condition : isnotnull(business_id#192)
+
+(4) Project [codegen id : 4]
+Output [2]: [business_id#192, stars#193]
+Input [3]: [business_id#192, stars#193, year#199]
+
+(5) Scan parquet 
+Output [3]: [business_id#200, state#204, categories#212]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/business]
+PushedFilters: [IsNotNull(state), IsNotNull(business_id)]
+ReadSchema: struct<business_id:string,state:string,categories:string>
+
+(6) ColumnarToRow [codegen id : 3]
+Input [3]: [business_id#200, state#204, categories#212]
+
+(7) Filter [codegen id : 3]
+Input [3]: [business_id#200, state#204, categories#212]
+Condition : (isnotnull(state#204) AND isnotnull(business_id#200))
+
+(8) Scan parquet 
+Output [1]: [state#218]
+Batched: true
+Location: InMemoryFileIndex [file:/home/nicolaos/advdb/parquet/business]
+PushedFilters: [IsNotNull(state)]
+ReadSchema: struct<state:string>
+
+(9) ColumnarToRow [codegen id : 1]
+Input [1]: [state#218]
+
+(10) Filter [codegen id : 1]
+Input [1]: [state#218]
+Condition : isnotnull(state#218)
+
+(11) HashAggregate [codegen id : 1]
+Input [1]: [state#218]
+Keys [1]: [state#218]
+Functions [1]: [partial_count(1)]
+Aggregate Attributes [1]: [count#247L]
+Results [2]: [state#218, count#248L]
+
+(12) Exchange
+Input [2]: [state#218, count#248L]
+Arguments: hashpartitioning(state#218, 200), ENSURE_REQUIREMENTS, [plan_id=216]
+
+(13) ShuffleQueryStage
+Output [2]: [state#218, count#248L]
+Arguments: 0
+
+(14) AQEShuffleRead
+Input [2]: [state#218, count#248L]
+Arguments: coalesced
+
+(15) HashAggregate [codegen id : 2]
+Input [2]: [state#218, count#248L]
+Keys [1]: [state#218]
+Functions [1]: [count(1)]
+Aggregate Attributes [1]: [count(1)#45L]
+Results [2]: [state#218, count(1)#45L AS count(1)#228L]
+
+(16) Filter [codegen id : 2]
+Input [2]: [state#218, count(1)#228L]
+Condition : (count(1)#228L >= 1000)
+
+(17) Project [codegen id : 2]
+Output [1]: [state#218]
+Input [2]: [state#218, count(1)#228L]
+
+(18) BroadcastExchange
+Input [1]: [state#218]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, true]),false), [plan_id=402]
+
+(19) BroadcastQueryStage
+Output [1]: [state#218]
+Arguments: 1
+
+(20) BroadcastHashJoin [codegen id : 3]
+Left keys [1]: [state#204]
+Right keys [1]: [state#218]
+Join type: LeftSemi
+Join condition: None
+
+(21) BroadcastExchange
+Input [3]: [business_id#200, state#204, categories#212]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=569]
+
+(22) BroadcastQueryStage
+Output [3]: [business_id#200, state#204, categories#212]
+Arguments: 2
+
+(23) BroadcastHashJoin [codegen id : 4]
+Left keys [1]: [business_id#192]
+Right keys [1]: [business_id#200]
+Join type: Inner
+Join condition: None
+
+(24) Project [codegen id : 4]
+Output [3]: [stars#193, state#204, categories#212]
+Input [5]: [business_id#192, stars#193, business_id#200, state#204, categories#212]
+
+(25) Generate [codegen id : 4]
+Input [3]: [stars#193, state#204, categories#212]
+Arguments: explode(split(categories#212, , , -1)), [stars#193, state#204], false, [category#229]
+
+(26) Project [codegen id : 4]
+Output [3]: [state#204, trim(category#229, None) AS category#232, stars#193]
+Input [3]: [stars#193, state#204, category#229]
+
+(27) HashAggregate [codegen id : 4]
+Input [3]: [state#204, category#232, stars#193]
+Keys [2]: [state#204, category#232]
+Functions [3]: [partial_count(1), partial_avg(stars#193), partial_avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)]
+Aggregate Attributes [5]: [count#237L, sum#238, count#239L, sum#240, count#241L]
+Results [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+
+(28) Exchange
+Input [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Arguments: hashpartitioning(state#204, category#232, 200), ENSURE_REQUIREMENTS, [plan_id=711]
+
+(29) ShuffleQueryStage
+Output [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Arguments: 3
+
+(30) AQEShuffleRead
+Input [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Arguments: coalesced
+
+(31) HashAggregate [codegen id : 5]
+Input [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Keys [2]: [state#204, category#232]
+Functions [3]: [count(1), avg(stars#193), avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)]
+Aggregate Attributes [3]: [count(1)#46L, avg(stars#193)#54, avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)#55]
+Results [5]: [state#204, category#232, count(1)#46L AS n_reviews#234L, avg(stars#193)#54 AS avg_stars#235, (avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)#55 * 100.0) AS pct_5star#236]
+
+(32) Filter [codegen id : 5]
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Condition : (n_reviews#234L >= 500)
+
+(33) Sort [codegen id : 5]
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204 ASC NULLS FIRST, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], false, 0
+
+(34) WindowGroupLimit
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], row_number(), 3, Partial
+
+(35) Exchange
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: hashpartitioning(state#204, 200), ENSURE_REQUIREMENTS, [plan_id=812]
+
+(36) ShuffleQueryStage
+Output [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: 4
+
+(37) AQEShuffleRead
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: coalesced
+
+(38) Sort [codegen id : 6]
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204 ASC NULLS FIRST, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], false, 0
+
+(39) WindowGroupLimit
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], row_number(), 3, Final
+
+(40) Window
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [row_number() windowspecdefinition(state#204, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rank#24], [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST]
+
+(41) Filter [codegen id : 7]
+Input [6]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236, rank#24]
+Condition : (rank#24 <= 3)
+
+(42) Project [codegen id : 7]
+Output [6]: [state#204, rank#24, category#232, n_reviews#234L, round(avg_stars#235, 2) AS avg_stars#25, round(pct_5star#236, 1) AS pct_5star#26]
+Input [6]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236, rank#24]
+
+(43) Exchange
+Input [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: rangepartitioning(state#204 ASC NULLS FIRST, rank#24 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=877]
+
+(44) ShuffleQueryStage
+Output [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: 5
+
+(45) AQEShuffleRead
+Input [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: coalesced
+
+(46) Sort [codegen id : 8]
+Input [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: [state#204 ASC NULLS FIRST, rank#24 ASC NULLS FIRST], true, 0
+
+(47) ResultQueryStage
+Output [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: 6
+
+(48) Filter
+Input [3]: [business_id#192, stars#193, year#199]
+Condition : isnotnull(business_id#192)
+
+(49) Project
+Output [2]: [business_id#192, stars#193]
+Input [3]: [business_id#192, stars#193, year#199]
+
+(50) Filter
+Input [3]: [business_id#200, state#204, categories#212]
+Condition : (isnotnull(state#204) AND isnotnull(business_id#200))
+
+(51) Filter
+Input [1]: [state#218]
+Condition : isnotnull(state#218)
+
+(52) HashAggregate
+Input [1]: [state#218]
+Keys [1]: [state#218]
+Functions [1]: [partial_count(1)]
+Aggregate Attributes [1]: [count#247L]
+Results [2]: [state#218, count#248L]
+
+(53) Exchange
+Input [2]: [state#218, count#248L]
+Arguments: hashpartitioning(state#218, 200), ENSURE_REQUIREMENTS, [plan_id=117]
+
+(54) HashAggregate
+Input [2]: [state#218, count#248L]
+Keys [1]: [state#218]
+Functions [1]: [count(1)]
+Aggregate Attributes [1]: [count(1)#45L]
+Results [2]: [state#218, count(1)#45L AS count(1)#228L]
+
+(55) Filter
+Input [2]: [state#218, count(1)#228L]
+Condition : (count(1)#228L >= 1000)
+
+(56) Project
+Output [1]: [state#218]
+Input [2]: [state#218, count(1)#228L]
+
+(57) BroadcastExchange
+Input [1]: [state#218]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, true]),false), [plan_id=122]
+
+(58) BroadcastHashJoin
+Left keys [1]: [state#204]
+Right keys [1]: [state#218]
+Join type: LeftSemi
+Join condition: None
+
+(59) BroadcastExchange
+Input [3]: [business_id#200, state#204, categories#212]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=125]
+
+(60) BroadcastHashJoin
+Left keys [1]: [business_id#192]
+Right keys [1]: [business_id#200]
+Join type: Inner
+Join condition: None
+
+(61) Project
+Output [3]: [stars#193, state#204, categories#212]
+Input [5]: [business_id#192, stars#193, business_id#200, state#204, categories#212]
+
+(62) Generate
+Input [3]: [stars#193, state#204, categories#212]
+Arguments: explode(split(categories#212, , , -1)), [stars#193, state#204], false, [category#229]
+
+(63) Project
+Output [3]: [state#204, trim(category#229, None) AS category#232, stars#193]
+Input [3]: [stars#193, state#204, category#229]
+
+(64) HashAggregate
+Input [3]: [state#204, category#232, stars#193]
+Keys [2]: [state#204, category#232]
+Functions [3]: [partial_count(1), partial_avg(stars#193), partial_avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)]
+Aggregate Attributes [5]: [count#237L, sum#238, count#239L, sum#240, count#241L]
+Results [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+
+(65) Exchange
+Input [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Arguments: hashpartitioning(state#204, category#232, 200), ENSURE_REQUIREMENTS, [plan_id=132]
+
+(66) HashAggregate
+Input [7]: [state#204, category#232, count#242L, sum#243, count#244L, sum#245, count#246L]
+Keys [2]: [state#204, category#232]
+Functions [3]: [count(1), avg(stars#193), avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)]
+Aggregate Attributes [3]: [count(1)#46L, avg(stars#193)#54, avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)#55]
+Results [5]: [state#204, category#232, count(1)#46L AS n_reviews#234L, avg(stars#193)#54 AS avg_stars#235, (avg(CASE WHEN (stars#193 = 5.0) THEN 1 ELSE 0 END)#55 * 100.0) AS pct_5star#236]
+
+(67) Filter
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Condition : (n_reviews#234L >= 500)
+
+(68) Sort
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204 ASC NULLS FIRST, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], false, 0
+
+(69) WindowGroupLimit
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], row_number(), 3, Partial
+
+(70) Exchange
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: hashpartitioning(state#204, 200), ENSURE_REQUIREMENTS, [plan_id=139]
+
+(71) Sort
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204 ASC NULLS FIRST, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], false, 0
+
+(72) WindowGroupLimit
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST], row_number(), 3, Final
+
+(73) Window
+Input [5]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236]
+Arguments: [row_number() windowspecdefinition(state#204, avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rank#24], [state#204], [avg_stars#235 DESC NULLS LAST, n_reviews#234L DESC NULLS LAST, category#232 ASC NULLS FIRST]
+
+(74) Filter
+Input [6]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236, rank#24]
+Condition : (rank#24 <= 3)
+
+(75) Project
+Output [6]: [state#204, rank#24, category#232, n_reviews#234L, round(avg_stars#235, 2) AS avg_stars#25, round(pct_5star#236, 1) AS pct_5star#26]
+Input [6]: [state#204, category#232, n_reviews#234L, avg_stars#235, pct_5star#236, rank#24]
+
+(76) Exchange
+Input [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: rangepartitioning(state#204 ASC NULLS FIRST, rank#24 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=146]
+
+(77) Sort
+Input [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: [state#204 ASC NULLS FIRST, rank#24 ASC NULLS FIRST], true, 0
+
+(78) AdaptiveSparkPlan
+Output [6]: [state#204, rank#24, category#232, n_reviews#234L, avg_stars#25, pct_5star#26]
+Arguments: isFinalPlan=true
+
+
